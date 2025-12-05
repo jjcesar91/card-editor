@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Edit, Trash2, Plus, Download, X, AlertTriangle, ChevronDown, Check, Zap, ScrollText, Swords, Hand, Settings, Copy } from 'lucide-react';
+import { Edit, Trash2, Plus, Download, X, AlertTriangle, ChevronDown, Check, Zap, ScrollText, Swords, Hand, Settings, Copy, Filter, Clock, Users, Tag, Minus, ChevronUp } from 'lucide-react';
 
-// Dati iniziali forniti dall'utente
+// Dati iniziali forniti dall'utente e ampliati
 const initialData = {
   "cardTypes": ["Attack", "Skill", "Power"],
+  "rarities": ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Token"], // NUOVO: Aggiunta la lista delle rarità
   "keywords": [
     { "name": "Holy Fervor", "description": "Risorsa specifica del Crusader che non decade. Potenzia carte specifiche e aumenta di 1 quando si gioca una carta HOLY o CRUSADER." },
     { "name": "Protection", "description": "Negozia il prossimo Debuff (es. Vulnerable, Weak, Bleed, Poison) applicato all'unità." },
@@ -12,36 +13,77 @@ const initialData = {
     { "name": "Strength", "description": "Aumenta i danni inflitti dagli attacchi." },
     { "name": "Tenacity", "description": "Aumenta la quantità di Blocco generato dalle carte." },
     { "name": "Craft", "description": "Permette di scegliere una carta da un elenco e aggiungerla al gioco (es. nel mazzo)." },
-    { "name": "Volatile", "description": "Indica carte con effetti speciali di dissolvenza o interazioni quando scartate." }
+    { "name": "Volatile", "description": "Indica carte con effetti speciali di dissolvenza o interazioni quando scartate." },
+    // Aggiunte keyword per le nuove carte
+    { "name": "Block", "description": "Riduce il danno subito." },
+    { "name": "Retain", "description": "La carta resta in mano fino a quando non viene giocata o scartata forzatamente." },
+    { "name": "Bleed", "description": "Danno periodico applicato all'inizio del turno." }
+  ],
+  // Nuova struttura per la gerarchia di classe
+  "classes": [
+    {
+      "name": "Crusader",
+      "subclasses": [
+        {
+          "name": "Knight",
+          "description": "Focus on mitigation and heavy armor.",
+          "passive": "Bulwark of Faith: Gain 1 Block per card discarded at end of turn.",
+        },
+        {
+          "name": "Zealot",
+          "description": "Focus on AoE and Lifevamp.",
+          "passive": "Bloodlust: Heal 3 HP & Gain 1 Energy on Kill.",
+        },
+        {
+          "name": "Inquisitor",
+          "description": "Focus on Debuffs and Truth.",
+          "passive": "Anathema: Enemy Debuffs cannot be cleansed.",
+        }
+      ]
+    }
   ],
   "cards": [
-    { "name": "Strike", "type": "Attack", "rarity": "Common", "cost": 1, "tags": [], "description": "Infligge 5 Danni." },
-    { "name": "Warcry", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Ottieni 1 Strength." },
-    { "name": "Bash", "type": "Attack", "rarity": "Common", "cost": 2, "tags": [], "description": "Infligge 8 Danni. Applica 2 Vulnerable." },
-    { "name": "Draw Steel", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Scarta 1 carta casuale. Pesca 1 carta Attack." },
-    { "name": "At Ready", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Scegli 2 carte Attack nel tuo discard pile. Mischiale nel tuo mazzo." },
-    { "name": "Divine Ward", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Ottieni 2 Protection." },
-    { "name": "Holy Smite", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Infligge danni pari a Holy Fervor. Holy Fervor viene azzerato." },
-    { "name": "Battle Trance", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Condizione: La mano contiene solo carte Attack. Ottieni 2 Energy." },
-    { "name": "Pray", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Craft 1 Blessing e mischiala nel mazzo." },
-    { "name": "In nomine patris", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Volatile. Scarta 1 carta. Pesca 1 carta Holy." },
-    { "name": "The Harder They Fall", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Infligge danno pari al 20% dei Punti Vita Massimi del Nemico." },
-    { "name": "Commandment", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Scarta 1 carta Holy. Infligge 5 danni moltiplicati per il numero di carte Holy presenti nel discard pile." },
-    { "name": "The Bigger They Are", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Applica 2 Weak. Mischia la carta 'Harder They Fall' nel mazzo." },
-    { "name": "Our Father...", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Volatile. Raddoppia Holy Fervor." },
-    { "name": "Iron Will", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Ottieni 2 Tenacity." },
-    { "name": "Reckless Nature", "type": "Power", "rarity": "Power", "cost": 1, "tags": [], "description": "Inizio Turno: Gioca automaticamente la prima carta pescata per -1 Energia (se possibile)." },
-    { "name": "Weapon Master", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Raddoppia gli effetti passivi della Mano Principale e della Mano Secondaria." },
-    { "name": "Samson's Strength", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Ottieni 2 Strength." },
-    { "name": "King David's Courage", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Una carta casuale in mano costa 0." },
-    { "name": "Solomon's Wisdom", "type": "Power", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Pesca +1 carta aggiuntiva a ogni turno." }
+    // Carte Originali (assegnate alla classe base CRUSADER)
+    { "name": "Strike", "type": "Attack", "rarity": "Common", "cost": 1, "tags": [], "description": "Infligge 5 Danni.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Warcry", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Ottieni 1 Strength.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Bash", "type": "Attack", "rarity": "Common", "cost": 2, "tags": [], "description": "Infligge 8 Danni. Applica 2 Vulnerable.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Draw Steel", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Scarta 1 carta casuale. Pesca 1 carta Attack.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "At Ready", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Scegli 2 carte Attack nel tuo discard pile. Mischiale nel tuo mazzo.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Divine Ward", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Ottieni 2 Protection.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Holy Smite", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Infligge danni pari a Holy Fervor. Holy Fervor viene azzerato.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Battle Trance", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Condizione: La mano contiene solo carte Attack. Ottieni 2 Energy.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Pray", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Craft 1 Blessing e mischiala nel mazzo.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "In nomine patris", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Volatile. Scarta 1 carta. Pesca 1 carta Holy.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "The Harder They Fall", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Infligge danno pari al 20% dei Punti Vita Massimi del Nemico.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Commandment", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Scarta 1 carta Holy. Infligge 5 danni moltiplicati per il numero di carte Holy presenti nel discard pile.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "The Bigger They Are", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Applica 2 Weak. Mischia la carta 'Harder They Fall' nel mazzo.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Our Father...", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Volatile. Raddoppia Holy Fervor.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Iron Will", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Ottieni 2 Tenacity.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Reckless Nature", "type": "Power", "rarity": "Power", "cost": 1, "tags": [], "description": "Inizio Turno: Gioca automaticamente la prima carta pescata per -1 Energia (se possibile).", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Weapon Master", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Raddoppia gli effetti passivi della Mano Principale e della Mano Secondaria.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Samson's Strength", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Ottieni 2 Strength.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "King David's Courage", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Una carta casuale in mano costa 0.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Solomon's Wisdom", "type": "Power", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Pesca +1 carta aggiuntiva a ogni turno.", "baseClass": "Crusader", "subclass": "" },
+    
+    // Carte Knight (Sottoclasse Crusader)
+    { "name": "Shield Block", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Gain 6 Block. Draw 1.", "baseClass": "Crusader", "subclass": "Knight" },
+    { "name": "Shield Bash", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Deal Dmg equal to Block.", "baseClass": "Crusader", "subclass": "Knight" },
+    { "name": "Hold Fast", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Choose 1 card in hand to Retain.", "baseClass": "Crusader", "subclass": "Knight" },
+
+    // Carte Zealot (Sottoclasse Crusader)
+    { "name": "Cleave", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["ZEALOT"], "description": "Deal 4 Dmg to ALL.", "baseClass": "Crusader", "subclass": "Zealot" },
+    { "name": "Blood Tithe", "type": "Skill", "rarity": "Common", "cost": 0, "tags": ["ZEALOT"], "description": "Lose 3 HP. Gain 2 Energy.", "baseClass": "Crusader", "subclass": "Zealot" },
+
+    // Carte Inquisitor (Sottoclasse Crusader)
+    { "name": "Condemn", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["INQUISITOR"], "description": "Apply 2 Weak.", "baseClass": "Crusader", "subclass": "Inquisitor" },
+    { "name": "Flail", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["INQUISITOR"], "description": "Deal 4 Dmg. Apply 1 Bleed.", "baseClass": "Crusader", "subclass": "Inquisitor" },
   ]
 };
 
 // Aggiunge un ID univoco a tutte le carte iniziali per la gestione dello stato
 const getInitialCards = () => initialData.cards.map(card => ({
     ...card,
-    id: card.id || crypto.randomUUID()
+    id: (card as any).id || crypto.randomUUID()
 }));
 
 const LOCAL_STORAGE_KEY = 'gameCardData';
@@ -121,7 +163,7 @@ const CardExportModal = ({ card, onClose }) => {
                 <textarea
                     readOnly
                     value={jsonContent}
-                    rows="15"
+                    rows={15}
                     className="w-full p-3 mb-4 rounded-lg bg-slate-900 border border-slate-700 text-lime-300 font-mono text-xs resize-none"
                 />
 
@@ -208,9 +250,13 @@ const CardDisplay = ({ card, onRefactor, onDelete }) => {
 
             {/* Corpo della Carta */}
             <div className="flex-1 p-3 text-sm overflow-auto text-slate-200">
-                {/* Tipo/Rarità/Tag */}
+                {/* Tipo/Rarità/Classe */}
                 <div className="mb-2 text-xs font-semibold uppercase opacity-80">
                     <span className="text-yellow-300">{card.rarity}</span> | <span className="text-sky-300">{card.type}</span>
+                    <span className="ml-2">| {card.baseClass || 'Nessuna Classe'}</span>
+                    {card.subclass && (
+                        <span className="ml-2 text-indigo-400">({card.subclass})</span>
+                    )}
                     {card.tags.length > 0 && (
                         <span className="ml-2">| {card.tags.join(', ')}</span>
                     )}
@@ -269,16 +315,23 @@ const CardDisplay = ({ card, onRefactor, onDelete }) => {
 
 
 // Componente Modale per l'Editor delle Carte
-const CardEditorModal = ({ card, cardTypes, keywords, onClose, onSave }) => {
+const CardEditorModal = ({ card, cardTypes, keywords, classes, rarities, onClose, onSave }) => { // AGGIUNTO 'rarities'
+    // Estrae i nomi delle sottoclassi disponibili
+    const allSubclasses = useMemo(() => 
+        classes.flatMap(c => c.subclasses.map(s => s.name))
+    , [classes]);
+
     // Clona la carta per evitare di modificare direttamente lo stato principale
     const [formData, setFormData] = useState(card ? { ...card } : {
         id: crypto.randomUUID(),
         name: '',
         cost: 1,
         type: cardTypes[0],
-        rarity: 'Common',
+        rarity: rarities[0] || 'Common', // Usa la prima rarità o 'Common'
         tags: [],
         description: '',
+        baseClass: classes[0]?.name || '', // Default alla prima classe trovata
+        subclass: '',
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -304,13 +357,6 @@ const CardEditorModal = ({ card, cardTypes, keywords, onClose, onSave }) => {
         const tagString = e.target.value;
         const tagsArray = tagString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
         setFormData(prev => ({ ...prev, tags: tagsArray }));
-    };
-
-    // Gestisce l'aggiunta/rimozione dei tipi di carta (multiselect)
-    const handleTypeToggle = (type) => {
-        // L'API della richiesta non prevedeva un multiselect di *tipi*, ma di *tag*.
-        // Trattando 'type' come singolo per coerenza con lo schema, ma 'tags' come array.
-        setFormData(prev => ({ ...prev, type: type }));
     };
 
     // Funzione per la gestione dei suggerimenti di keyword
@@ -458,20 +504,67 @@ const CardEditorModal = ({ card, cardTypes, keywords, onClose, onSave }) => {
 
                         <div>
                             <label htmlFor="rarity" className="block text-sm font-medium text-indigo-300">Rarità</label>
-                            <input
-                                id="rarity"
-                                name="rarity"
-                                type="text"
-                                value={formData.rarity}
-                                onChange={handleChange}
-                                className="w-full p-2 mt-1 rounded-lg bg-slate-700 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
-                            />
+                            <div className="relative mt-1">
+                                <select // CAMBIATO DA INPUT A SELECT
+                                    id="rarity"
+                                    name="rarity"
+                                    value={formData.rarity}
+                                    onChange={handleChange}
+                                    className="w-full p-2 pr-10 rounded-lg appearance-none bg-slate-700 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    {rarities.map(r => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* CLASSE BASE e SOTTOCLASSE */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="baseClass" className="block text-sm font-medium text-indigo-300">Classe Base</label>
+                            <div className="relative mt-1">
+                                <select
+                                    id="baseClass"
+                                    name="baseClass"
+                                    value={formData.baseClass}
+                                    onChange={handleChange}
+                                    className="w-full p-2 pr-10 rounded-lg appearance-none bg-slate-700 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    {classes.map(c => (
+                                        <option key={c.name} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="subclass" className="block text-sm font-medium text-indigo-300">Sottoclasse</label>
+                            <div className="relative mt-1">
+                                <select
+                                    id="subclass"
+                                    name="subclass"
+                                    value={formData.subclass}
+                                    onChange={handleChange}
+                                    className="w-full p-2 pr-10 rounded-lg appearance-none bg-slate-700 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    <option value="">(Nessuna)</option>
+                                    {allSubclasses.map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1">Es: Knight, Zealot, Inquisitor</p>
                         </div>
                     </div>
                     
                     {/* TAGS (Classe) */}
                     <div>
-                        <label htmlFor="tags" className="block text-sm font-medium text-indigo-300">Tags/Classe (Separati da virgola, es: HOLY, BLESSING)</label>
+                        <label htmlFor="tags" className="block text-sm font-medium text-indigo-300">Tags/Classe (Separati da virgola, es: HOLY, KNIGHT)</label>
                         <input
                             id="tags"
                             name="tags"
@@ -481,7 +574,7 @@ const CardEditorModal = ({ card, cardTypes, keywords, onClose, onSave }) => {
                             className="w-full p-2 mt-1 rounded-lg bg-slate-700 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
                             placeholder="Inserisci i tag separati da virgola"
                         />
-                        <p className="text-xs text-slate-400 mt-1">Questi rappresentano le classi o sottotipi (es. HOLY).</p>
+                        <p className="text-xs text-slate-400 mt-1">Questi rappresentano le classi o sottotipi (es. HOLY, KNIGHT).</p>
                     </div>
 
                     {/* DESCRIZIONE (con suggerimento keyword) */}
@@ -491,7 +584,7 @@ const CardEditorModal = ({ card, cardTypes, keywords, onClose, onSave }) => {
                             ref={descriptionRef}
                             id="description"
                             name="description"
-                            rows="5"
+                            rows={5}
                             value={formData.description}
                             onChange={handleDescriptionChange}
                             className="w-full p-2 mt-1 rounded-lg bg-slate-700 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
@@ -544,17 +637,207 @@ const CardEditorModal = ({ card, cardTypes, keywords, onClose, onSave }) => {
     );
 };
 
+// Nuovo Componente Filtro
+const CardFilter = ({ filters, setFilters, cardTypes, classes, allKeywords, maxEnergyCost }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    const handleFilterChange = (name, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [name]: value,
+            // Reset sottoclasse se la classe base cambia
+            ...(name === 'class' && { subclass: '' })
+        }));
+    };
+
+    const handleCostChange = (e) => {
+        const { name, value } = e.target;
+        // La validazione assicura che il valore sia un numero. 
+        // Usiamo Math.max per prevenire valori minimi superiori al massimo e viceversa.
+        let numValue = parseInt(value, 10);
+        if (isNaN(numValue)) numValue = 0;
+
+        setFilters(prev => {
+            const newFilters = { ...prev, [name]: numValue };
+
+            // Assicurati che minCost non superi maxCost e viceversa
+            if (name === 'minCost' && numValue > newFilters.maxCost) {
+                newFilters.maxCost = numValue;
+            } else if (name === 'maxCost' && numValue < newFilters.minCost) {
+                newFilters.minCost = numValue;
+            }
+            return newFilters;
+        });
+    };
+
+    const handleReset = () => {
+        setFilters({
+            class: '',
+            subclass: '',
+            type: '',
+            keyword: '',
+            minCost: 0,
+            maxCost: maxEnergyCost,
+        });
+    };
+
+    // CORREZIONE: Se filters.class è vuoto, restituisce TUTTE le sottoclassi disponibili.
+    const currentSubclasses = useMemo(() => {
+        // Se è selezionata una classe base specifica, restituisce solo le sue sottoclassi.
+        if (filters.class) {
+            const baseClass = classes.find(c => c.name === filters.class);
+            return baseClass ? baseClass.subclasses.map(s => s.name).sort() : [];
+        }
+
+        // Altrimenti (se è selezionato 'Tutte le Classi'), restituisce TUTTE le sottoclassi di tutte le classi.
+        return classes.flatMap(c => c.subclasses.map(s => s.name)).sort();
+    }, [classes, filters.class]);
+
+    return (
+        <div className="bg-slate-800 p-4 mb-6 rounded-xl shadow-xl border-t-4 border-teal-500">
+            <div 
+                className="flex justify-between items-center cursor-pointer mb-3"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <h2 className="text-xl font-bold text-white flex items-center">
+                    <Filter className="w-5 h-5 mr-2 text-teal-400" /> Filtri ({isExpanded ? 'Aperti' : 'Chiusi'})
+                </h2>
+                <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                    className="p-1 text-teal-400 hover:text-white transition"
+                >
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+            </div>
+
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-white">
+                    {/* Filtro Classe Base */}
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-teal-300 mb-1"><Users className="w-4 h-4 mr-1" /> Classe Base</label>
+                        <select
+                            value={filters.class}
+                            onChange={(e) => handleFilterChange('class', e.target.value)}
+                            className="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 text-sm"
+                        >
+                            <option value="">Tutte le Classi</option>
+                            {classes.map(c => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Filtro Sottoclasse */}
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-teal-300 mb-1"><Users className="w-4 h-4 mr-1" /> Sottoclasse</label>
+                        <select
+                            value={filters.subclass}
+                            onChange={(e) => handleFilterChange('subclass', e.target.value)}
+                            className="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 text-sm"
+                            // Rimosso 'disabled' in modo che possa mostrare tutti i risultati quando 'Tutte le Classi' è selezionato
+                        >
+                            <option value="">Tutte le Sottoclassi</option>
+                            {currentSubclasses.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Filtro Tipo Carta */}
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-teal-300 mb-1"><ScrollText className="w-4 h-4 mr-1" /> Tipo</label>
+                        <select
+                            value={filters.type}
+                            onChange={(e) => handleFilterChange('type', e.target.value)}
+                            className="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 text-sm"
+                        >
+                            <option value="">Tutti i Tipi</option>
+                            {cardTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    {/* Filtro Keyword */}
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-teal-300 mb-1"><Tag className="w-4 h-4 mr-1" /> Keyword</label>
+                        <select
+                            value={filters.keyword}
+                            onChange={(e) => handleFilterChange('keyword', e.target.value)}
+                            className="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 text-sm"
+                        >
+                            <option value="">Tutte le Keyword</option>
+                            {allKeywords.map(keyword => (
+                                <option key={keyword} value={keyword}>{keyword}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Filtro Costo Energia */}
+                <div className="mt-4">
+                    <label className="flex items-center text-sm font-medium text-teal-300 mb-2"><Zap className="w-4 h-4 mr-1" /> Costo Energia: {filters.minCost} - {filters.maxCost}</label>
+                    
+                    <div className="flex items-center space-x-4">
+                        <input
+                            type="range"
+                            name="minCost"
+                            min="0"
+                            max={maxEnergyCost}
+                            value={filters.minCost}
+                            onChange={handleCostChange}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer range-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            style={{ '--tw-ring-color': '#14b8a6' } as React.CSSProperties}
+                        />
+                        <input
+                            type="number"
+                            name="maxCost"
+                            min={filters.minCost}
+                            max={maxEnergyCost}
+                            value={filters.maxCost}
+                            onChange={handleCostChange}
+                            className="w-16 p-1 rounded-lg bg-slate-700 border border-slate-600 text-sm text-center"
+                        />
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                    <button
+                        onClick={handleReset}
+                        className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-150 text-sm"
+                    >
+                        <Minus className="w-4 h-4 mr-2" /> Reset Filtri
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // Componente Principale App
 export default function App() {
     // Stato: Lista delle Carte e Info Aggiuntive
-    const [cards, setCards] = useState([]);
+    const [cards, setCards] = useState<any[]>([]);
     const [cardTypes] = useState(initialData.cardTypes);
+    const [rarities] = useState(initialData.rarities); // NUOVO: Aggiunta la lista delle rarità allo stato
     const [keywords] = useState(initialData.keywords);
+    const [classes] = useState(initialData.classes); 
     
-    // Stato per la Modale (Add/Edit)
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingCard, setEditingCard] = useState(null); // La carta in fase di modifica, null se si sta aggiungendo
+    // Filtri Derivati e Stato Filtri
+    const allKeywords = useMemo(() => keywords.map(k => k.name).sort(), [keywords]);
+    const maxInitialEnergyCost = useMemo(() => {
+        return initialData.cards.length > 0 ? Math.max(...initialData.cards.map(c => c.cost || 0)) : 5;
+    }, []);
+    const [filters, setFilters] = useState({
+        class: '',
+        subclass: '',
+        type: '',
+        keyword: '',
+        minCost: 0,
+        maxCost: maxInitialEnergyCost,
+    });
 
     // 1. Caricamento Iniziale da localStorage
     useEffect(() => {
@@ -563,6 +846,9 @@ export default function App() {
             if (savedData) {
                 const parsedData = JSON.parse(savedData);
                 setCards(parsedData.cards || getInitialCards());
+                // Imposta il filtro maxCost basandosi sui dati caricati o iniziali
+                const maxCost = parsedData.cards.length > 0 ? Math.max(...parsedData.cards.map(c => c.cost || 0)) : maxInitialEnergyCost;
+                setFilters(f => ({ ...f, maxCost: maxCost }));
             } else {
                 setCards(getInitialCards());
             }
@@ -570,7 +856,7 @@ export default function App() {
             console.error("Errore nel caricamento dei dati da localStorage:", e);
             setCards(getInitialCards());
         }
-    }, []);
+    }, [maxInitialEnergyCost]);
 
     // 2. Salvataggio su localStorage
     useEffect(() => {
@@ -580,15 +866,58 @@ export default function App() {
                  const dataToSave = {
                     cards: cards,
                     cardTypes: cardTypes,
-                    keywords: keywords // Salviamo anche questi dati per riferimento futuro
+                    keywords: keywords,
+                    classes: classes,
+                    rarities: rarities, // NUOVO: Inclusione della lista rarità
                 };
                 localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
             }
         } catch (e) {
             console.error("Errore nel salvataggio dei dati su localStorage:", e);
         }
-    }, [cards, cardTypes, keywords]);
+    }, [cards, cardTypes, keywords, classes, rarities]);
 
+    // 3. Logica di Filtro
+    const filteredCards = useMemo(() => {
+        const currentMaxCost = cards.length > 0 ? Math.max(...cards.map(c => c.cost || 0)) : 5;
+        const normalizedFilters = {
+            ...filters,
+            maxCost: filters.maxCost > currentMaxCost ? currentMaxCost : filters.maxCost
+        };
+
+        return cards.filter(card => {
+            // 1. Class/Subclass Filter
+            if (normalizedFilters.class && card.baseClass !== normalizedFilters.class) {
+                return false;
+            }
+            if (normalizedFilters.subclass && card.subclass !== normalizedFilters.subclass) {
+                // Filtra solo se la sottoclasse non è vuota.
+                return false;
+            }
+
+            // 2. Type Filter
+            if (normalizedFilters.type && card.type !== normalizedFilters.type) {
+                return false;
+            }
+
+            // 3. Keyword Filter (cerca la parola intera nel testo, insensibile alle maiuscole)
+            if (normalizedFilters.keyword) {
+                // \b assicura la corrispondenza con la parola intera
+                const keywordRegex = new RegExp(`\\b${normalizedFilters.keyword}\\b`, 'i');
+                if (!keywordRegex.test(card.description)) {
+                    return false;
+                }
+            }
+
+            // 4. Energy Cost Filter
+            const cost = card.cost || 0;
+            if (cost < normalizedFilters.minCost || cost > normalizedFilters.maxCost) {
+                return false;
+            }
+
+            return true;
+        });
+    }, [cards, filters]);
 
     // Funzione per l'apertura della modale per l'Aggiunta
     const handleAddCard = useCallback(() => {
@@ -643,6 +972,8 @@ export default function App() {
         const dataToExport = {
             cardTypes: cardTypes,
             keywords: keywords,
+            classes: classes, // Esportazione della struttura classi
+            rarities: rarities,
             // Rimuove gli ID aggiunti internamente per un export pulito
             cards: cards.map(({ id, ...rest }) => rest) 
         };
@@ -656,7 +987,10 @@ export default function App() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }, [cards, cardTypes, keywords]);
+    }, [cards, cardTypes, keywords, classes, rarities]);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingCard, setEditingCard] = useState(null);
 
     return (
         <div className="min-h-screen bg-slate-900 p-2 sm:p-4 md:p-8">
@@ -681,10 +1015,20 @@ export default function App() {
                 </button>
             </div>
 
+            {/* NUOVO: Filtri */}
+            <CardFilter 
+                filters={filters}
+                setFilters={setFilters}
+                cardTypes={cardTypes}
+                classes={classes}
+                allKeywords={allKeywords}
+                maxEnergyCost={maxInitialEnergyCost} // Usa il max costo iniziale come limite superiore
+            />
+
             {/* Visualizzazione Carte in Griglia - Passa a 1 colonna su schermi extra-small (xs) e poi aumenta */}
             <main className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-                {cards.length > 0 ? (
-                    cards.map(card => (
+                {filteredCards.length > 0 ? (
+                    filteredCards.map(card => (
                         <CardDisplay
                             key={card.id}
                             card={card}
@@ -694,7 +1038,7 @@ export default function App() {
                     ))
                 ) : (
                     <p className="col-span-full text-center text-slate-400 text-lg py-12">
-                        Nessuna carta presente. Inizia aggiungendone una!
+                        Nessuna carta trovata con i filtri attuali.
                     </p>
                 )}
             </main>
@@ -709,6 +1053,8 @@ export default function App() {
                     card={editingCard}
                     cardTypes={cardTypes}
                     keywords={keywords}
+                    classes={classes}
+                    rarities={rarities} // NUOVO: Passa la lista delle rarità
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveCard}
                 />

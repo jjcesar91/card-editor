@@ -71,10 +71,10 @@ typings/
 
 # dotenv environment variables file
 .env
-.env.development.local
-.env.test.local
-.env.production.local
+.env.test
+.env.production
 .env.local
+.env.*.local
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -124,12 +124,22 @@ dist-ssr
 *.local
 
 # Editor directories and files
+.idea
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/launch.json
+!.vscode/tasks.json
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
