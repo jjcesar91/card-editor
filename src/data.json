@@ -1,0 +1,68 @@
+{
+  "cardTypes": ["Attack", "Skill", "Power"],
+  "rarities": ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Token"],
+  "keywords": [
+    { "name": "Holy Fervor", "description": "Risorsa specifica del Crusader che non decade. Potenzia carte specifiche e aumenta di 1 quando si gioca una carta HOLY o CRUSADER." },
+    { "name": "Protection", "description": "Negozia il prossimo Debuff (es. Vulnerable, Weak, Bleed, Poison) applicato all'unità." },
+    { "name": "Vulnerable", "description": "Aumenta i danni subiti dall'unità." },
+    { "name": "Weak", "description": "Riduce i danni inflitti dall'unità." },
+    { "name": "Strength", "description": "Aumenta i danni inflitti dagli attacchi." },
+    { "name": "Tenacity", "description": "Aumenta la quantità di Blocco generato dalle carte." },
+    { "name": "Craft", "description": "Permette di scegliere una carta da un elenco e aggiungerla al gioco (es. nel mazzo)." },
+    { "name": "Volatile", "description": "Indica carte con effetti speciali di dissolvenza o interazioni quando scartate." },
+    { "name": "Block", "description": "Riduce il danno subito." },
+    { "name": "Retain", "description": "La carta resta in mano fino a quando non viene giocata o scartata forzatamente." },
+    { "name": "Bleed", "description": "Danno periodico applicato all'inizio del turno." }
+  ],
+  "classes": [
+    {
+      "name": "Crusader",
+      "subclasses": [
+        {
+          "name": "Knight",
+          "description": "Focus on mitigation and heavy armor.",
+          "passive": "Bulwark of Faith: Gain 1 Block per card discarded at end of turn."
+        },
+        {
+          "name": "Zealot",
+          "description": "Focus on AoE and Lifevamp.",
+          "passive": "Bloodlust: Heal 3 HP & Gain 1 Energy on Kill."
+        },
+        {
+          "name": "Inquisitor",
+          "description": "Focus on Debuffs and Truth.",
+          "passive": "Anathema: Enemy Debuffs cannot be cleansed."
+        }
+      ]
+    }
+  ],
+  "cards": [
+    { "name": "Strike", "type": "Attack", "rarity": "Common", "cost": 1, "tags": [], "description": "Infligge 5 Danni.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Warcry", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Ottieni 1 Strength.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Bash", "type": "Attack", "rarity": "Common", "cost": 2, "tags": [], "description": "Infligge 8 Danni. Applica 2 Vulnerable.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Draw Steel", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Scarta 1 carta casuale. Pesca 1 carta Attack.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "At Ready", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Scegli 2 carte Attack nel tuo discard pile. Mischiale nel tuo mazzo.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Divine Ward", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Ottieni 2 Protection.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Holy Smite", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Infligge danni pari a Holy Fervor. Holy Fervor viene azzerato.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Battle Trance", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Condizione: La mano contiene solo carte Attack. Ottieni 2 Energy.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Pray", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Craft 1 Blessing e mischiala nel mazzo.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "In nomine patris", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Volatile. Scarta 1 carta. Pesca 1 carta Holy.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "The Harder They Fall", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Infligge danno pari al 20% dei Punti Vita Massimi del Nemico.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Commandment", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Scarta 1 carta Holy. Infligge 5 danni moltiplicati per il numero di carte Holy presenti nel discard pile.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "The Bigger They Are", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Applica 2 Weak. Mischia la carta 'Harder They Fall' nel mazzo.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Our Father...", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Volatile. Raddoppia Holy Fervor.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Iron Will", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Ottieni 2 Tenacity.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Reckless Nature", "type": "Power", "rarity": "Power", "cost": 1, "tags": [], "description": "Inizio Turno: Gioca automaticamente la prima carta pescata per -1 Energia (se possibile).", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Weapon Master", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Raddoppia gli effetti passivi della Mano Principale e della Mano Secondaria.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Samson's Strength", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Ottieni 2 Strength.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "King David's Courage", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Una carta casuale in mano costa 0.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Solomon's Wisdom", "type": "Power", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Pesca +1 carta aggiuntiva a ogni turno.", "baseClass": "Crusader", "subclass": "" },
+    { "name": "Shield Block", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Gain 6 Block. Draw 1.", "baseClass": "Crusader", "subclass": "Knight" },
+    { "name": "Shield Bash", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Deal Dmg equal to Block.", "baseClass": "Crusader", "subclass": "Knight" },
+    { "name": "Hold Fast", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Choose 1 card in hand to Retain.", "baseClass": "Crusader", "subclass": "Knight" },
+    { "name": "Cleave", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["ZEALOT"], "description": "Deal 4 Dmg to ALL.", "baseClass": "Crusader", "subclass": "Zealot" },
+    { "name": "Blood Tithe", "type": "Skill", "rarity": "Common", "cost": 0, "tags": ["ZEALOT"], "description": "Lose 3 HP. Gain 2 Energy.", "baseClass": "Crusader", "subclass": "Zealot" },
+    { "name": "Condemn", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["INQUISITOR"], "description": "Apply 2 Weak.", "baseClass": "Crusader", "subclass": "Inquisitor" },
+    { "name": "Flail", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["INQUISITOR"], "description": "Deal 4 Dmg. Apply 1 Bleed.", "baseClass": "Crusader", "subclass": "Inquisitor" }
+  ]
+}

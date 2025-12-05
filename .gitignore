@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Card data (user-generated)
-src/data.json
+# src/data.json
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
