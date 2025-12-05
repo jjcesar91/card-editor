@@ -1,92 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Edit, Trash2, Plus, Download, X, AlertTriangle, ChevronDown, Check, Zap, ScrollText, Swords, Hand, Settings, Copy, Filter, Clock, Users, Tag, Minus, ChevronUp } from 'lucide-react';
-
-// Dati iniziali forniti dall'utente e ampliati
-const initialData = {
-  "cardTypes": ["Attack", "Skill", "Power"],
-  "rarities": ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Token"], // NUOVO: Aggiunta la lista delle rarità
-  "keywords": [
-    { "name": "Holy Fervor", "description": "Risorsa specifica del Crusader che non decade. Potenzia carte specifiche e aumenta di 1 quando si gioca una carta HOLY o CRUSADER." },
-    { "name": "Protection", "description": "Negozia il prossimo Debuff (es. Vulnerable, Weak, Bleed, Poison) applicato all'unità." },
-    { "name": "Vulnerable", "description": "Aumenta i danni subiti dall'unità." },
-    { "name": "Weak", "description": "Riduce i danni inflitti dall'unità." },
-    { "name": "Strength", "description": "Aumenta i danni inflitti dagli attacchi." },
-    { "name": "Tenacity", "description": "Aumenta la quantità di Blocco generato dalle carte." },
-    { "name": "Craft", "description": "Permette di scegliere una carta da un elenco e aggiungerla al gioco (es. nel mazzo)." },
-    { "name": "Volatile", "description": "Indica carte con effetti speciali di dissolvenza o interazioni quando scartate." },
-    // Aggiunte keyword per le nuove carte
-    { "name": "Block", "description": "Riduce il danno subito." },
-    { "name": "Retain", "description": "La carta resta in mano fino a quando non viene giocata o scartata forzatamente." },
-    { "name": "Bleed", "description": "Danno periodico applicato all'inizio del turno." }
-  ],
-  // Nuova struttura per la gerarchia di classe
-  "classes": [
-    {
-      "name": "Crusader",
-      "subclasses": [
-        {
-          "name": "Knight",
-          "description": "Focus on mitigation and heavy armor.",
-          "passive": "Bulwark of Faith: Gain 1 Block per card discarded at end of turn.",
-        },
-        {
-          "name": "Zealot",
-          "description": "Focus on AoE and Lifevamp.",
-          "passive": "Bloodlust: Heal 3 HP & Gain 1 Energy on Kill.",
-        },
-        {
-          "name": "Inquisitor",
-          "description": "Focus on Debuffs and Truth.",
-          "passive": "Anathema: Enemy Debuffs cannot be cleansed.",
-        }
-      ]
-    }
-  ],
-  "cards": [
-    // Carte Originali (assegnate alla classe base CRUSADER)
-    { "name": "Strike", "type": "Attack", "rarity": "Common", "cost": 1, "tags": [], "description": "Infligge 5 Danni.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Warcry", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Ottieni 1 Strength.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Bash", "type": "Attack", "rarity": "Common", "cost": 2, "tags": [], "description": "Infligge 8 Danni. Applica 2 Vulnerable.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Draw Steel", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Scarta 1 carta casuale. Pesca 1 carta Attack.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "At Ready", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Scegli 2 carte Attack nel tuo discard pile. Mischiale nel tuo mazzo.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Divine Ward", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Ottieni 2 Protection.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Holy Smite", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Infligge danni pari a Holy Fervor. Holy Fervor viene azzerato.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Battle Trance", "type": "Skill", "rarity": "Common", "cost": 0, "tags": [], "description": "Condizione: La mano contiene solo carte Attack. Ottieni 2 Energy.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Pray", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Craft 1 Blessing e mischiala nel mazzo.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "In nomine patris", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["HOLY"], "description": "Volatile. Scarta 1 carta. Pesca 1 carta Holy.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "The Harder They Fall", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Infligge danno pari al 20% dei Punti Vita Massimi del Nemico.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Commandment", "type": "Attack", "rarity": "Common", "cost": 3, "tags": ["HOLY"], "description": "Scarta 1 carta Holy. Infligge 5 danni moltiplicati per il numero di carte Holy presenti nel discard pile.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "The Bigger They Are", "type": "Skill", "rarity": "Common", "cost": 1, "tags": [], "description": "Applica 2 Weak. Mischia la carta 'Harder They Fall' nel mazzo.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Our Father...", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["HOLY"], "description": "Volatile. Raddoppia Holy Fervor.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Iron Will", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Ottieni 2 Tenacity.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Reckless Nature", "type": "Power", "rarity": "Power", "cost": 1, "tags": [], "description": "Inizio Turno: Gioca automaticamente la prima carta pescata per -1 Energia (se possibile).", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Weapon Master", "type": "Power", "rarity": "Power", "cost": 2, "tags": [], "description": "Raddoppia gli effetti passivi della Mano Principale e della Mano Secondaria.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Samson's Strength", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Ottieni 2 Strength.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "King David's Courage", "type": "Skill", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Una carta casuale in mano costa 0.", "baseClass": "Crusader", "subclass": "" },
-    { "name": "Solomon's Wisdom", "type": "Power", "rarity": "Token", "cost": 0, "tags": ["HOLY", "BLESSING"], "description": "Pesca +1 carta aggiuntiva a ogni turno.", "baseClass": "Crusader", "subclass": "" },
-    
-    // Carte Knight (Sottoclasse Crusader)
-    { "name": "Shield Block", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Gain 6 Block. Draw 1.", "baseClass": "Crusader", "subclass": "Knight" },
-    { "name": "Shield Bash", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Deal Dmg equal to Block.", "baseClass": "Crusader", "subclass": "Knight" },
-    { "name": "Hold Fast", "type": "Skill", "rarity": "Common", "cost": 1, "tags": ["KNIGHT"], "description": "Choose 1 card in hand to Retain.", "baseClass": "Crusader", "subclass": "Knight" },
-
-    // Carte Zealot (Sottoclasse Crusader)
-    { "name": "Cleave", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["ZEALOT"], "description": "Deal 4 Dmg to ALL.", "baseClass": "Crusader", "subclass": "Zealot" },
-    { "name": "Blood Tithe", "type": "Skill", "rarity": "Common", "cost": 0, "tags": ["ZEALOT"], "description": "Lose 3 HP. Gain 2 Energy.", "baseClass": "Crusader", "subclass": "Zealot" },
-
-    // Carte Inquisitor (Sottoclasse Crusader)
-    { "name": "Condemn", "type": "Skill", "rarity": "Common", "cost": 2, "tags": ["INQUISITOR"], "description": "Apply 2 Weak.", "baseClass": "Crusader", "subclass": "Inquisitor" },
-    { "name": "Flail", "type": "Attack", "rarity": "Common", "cost": 1, "tags": ["INQUISITOR"], "description": "Deal 4 Dmg. Apply 1 Bleed.", "baseClass": "Crusader", "subclass": "Inquisitor" },
-  ]
-};
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Edit, Trash2, Plus, Download, X, AlertTriangle, ChevronDown, Check, Zap, ScrollText, Swords, Hand, Settings, Copy, Filter, Clock, Users, Tag, Minus, ChevronUp, Save, Upload } from 'lucide-react';
+import initialData from './data.json';
 
 // Aggiunge un ID univoco a tutte le carte iniziali per la gestione dello stato
 const getInitialCards = () => initialData.cards.map(card => ({
     ...card,
     id: (card as any).id || crypto.randomUUID()
 }));
-
-const LOCAL_STORAGE_KEY = 'gameCardData';
 
 // Funzione per ottenere l'icona in base al tipo di carta
 const getCardIcon = (type) => {
@@ -839,43 +759,15 @@ export default function App() {
         maxCost: maxInitialEnergyCost,
     });
 
-    // 1. Caricamento Iniziale da localStorage
+    // 1. Caricamento Iniziale da data.json (via import)
     useEffect(() => {
-        try {
-            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (savedData) {
-                const parsedData = JSON.parse(savedData);
-                setCards(parsedData.cards || getInitialCards());
-                // Imposta il filtro maxCost basandosi sui dati caricati o iniziali
-                const maxCost = parsedData.cards.length > 0 ? Math.max(...parsedData.cards.map(c => c.cost || 0)) : maxInitialEnergyCost;
-                setFilters(f => ({ ...f, maxCost: maxCost }));
-            } else {
-                setCards(getInitialCards());
-            }
-        } catch (e) {
-            console.error("Errore nel caricamento dei dati da localStorage:", e);
-            setCards(getInitialCards());
-        }
+        // Carica sempre le carte dal file data.json importato
+        setCards(getInitialCards());
+        const maxCost = initialData.cards.length > 0 ? Math.max(...initialData.cards.map(c => c.cost || 0)) : maxInitialEnergyCost;
+        setFilters(f => ({ ...f, maxCost: maxCost }));
     }, [maxInitialEnergyCost]);
 
-    // 2. Salvataggio su localStorage
-    useEffect(() => {
-        try {
-            // Salviamo solo se le carte sono state caricate (evita di sovrascrivere all'inizio)
-            if (cards.length > 0 || localStorage.getItem(LOCAL_STORAGE_KEY)) {
-                 const dataToSave = {
-                    cards: cards,
-                    cardTypes: cardTypes,
-                    keywords: keywords,
-                    classes: classes,
-                    rarities: rarities, // NUOVO: Inclusione della lista rarità
-                };
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-            }
-        } catch (e) {
-            console.error("Errore nel salvataggio dei dati su localStorage:", e);
-        }
-    }, [cards, cardTypes, keywords, classes, rarities]);
+    // 2. Nota: Il salvataggio avviene tramite il bottone "Salva Modifiche" che salva su data.json
 
     // 3. Logica di Filtro
     const filteredCards = useMemo(() => {
@@ -989,8 +881,108 @@ export default function App() {
         URL.revokeObjectURL(url);
     }, [cards, cardTypes, keywords, classes, rarities]);
 
+    // Funzione per il Salvataggio su file data.json
+    const [isSaving, setIsSaving] = useState(false);
+    const handleSaveToFile = useCallback(async () => {
+        setIsSaving(true);
+        const dataToSave = {
+            cardTypes: cardTypes,
+            rarities: rarities,
+            keywords: keywords,
+            classes: classes,
+            cards: cards.map(({ id, ...rest }) => rest)
+        };
+
+        try {
+            const response = await fetch('/api/save-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dataToSave),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Ricarica l'applicazione dopo il salvataggio
+                window.location.reload();
+            } else {
+                alert('Errore nel salvataggio: ' + result.error);
+            }
+        } catch (error) {
+            alert('Errore di connessione: ' + error.message);
+        } finally {
+            setIsSaving(false);
+        }
+    }, [cards, cardTypes, keywords, classes, rarities]);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCard, setEditingCard] = useState(null);
+    
+    // Stato per l'importazione JSON
+    const [showImportWarning, setShowImportWarning] = useState(false);
+    const [pendingImportData, setPendingImportData] = useState<any>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Funzione per gestire la selezione del file
+    const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const jsonData = JSON.parse(event.target?.result as string);
+                // Valida la struttura base del JSON
+                if (!jsonData.cards || !Array.isArray(jsonData.cards)) {
+                    alert('Errore: Il file JSON non contiene un array "cards" valido.');
+                    return;
+                }
+                setPendingImportData(jsonData);
+                setShowImportWarning(true);
+            } catch (error) {
+                alert('Errore: Il file selezionato non è un JSON valido.');
+            }
+        };
+        reader.readAsText(file);
+        // Reset input per permettere di selezionare lo stesso file
+        e.target.value = '';
+    }, []);
+
+    // Funzione per confermare l'importazione
+    const handleConfirmImport = useCallback(async () => {
+        if (!pendingImportData) return;
+
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/save-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(pendingImportData),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                setShowImportWarning(false);
+                setPendingImportData(null);
+                window.location.reload();
+            } else {
+                alert('Errore nel salvataggio: ' + result.error);
+            }
+        } catch (error: any) {
+            alert('Errore di connessione: ' + error.message);
+        } finally {
+            setIsSaving(false);
+        }
+    }, [pendingImportData]);
+
+    // Funzione per annullare l'importazione
+    const handleCancelImport = useCallback(() => {
+        setShowImportWarning(false);
+        setPendingImportData(null);
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-900 p-2 sm:p-4 md:p-8">
@@ -1008,12 +1000,69 @@ export default function App() {
                     <Plus className="w-4 h-4 mr-2" /> Aggiungi Carta
                 </button>
                 <button
+                    onClick={handleSaveToFile}
+                    disabled={isSaving}
+                    className="flex items-center p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition duration-150 transform hover:scale-[1.05] w-full sm:w-auto justify-center text-sm"
+                >
+                    <Save className="w-4 h-4 mr-2" /> {isSaving ? 'Salvataggio...' : 'Salva Modifiche'}
+                </button>
+                <button
                     onClick={handleExportCards}
                     className="flex items-center p-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-xl shadow-md transition duration-150 transform hover:scale-[1.05] w-full sm:w-auto justify-center text-sm"
                 >
                     <Download className="w-4 h-4 mr-2" /> Estrai (Esporta JSON)
                 </button>
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center p-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition duration-150 transform hover:scale-[1.05] w-full sm:w-auto justify-center text-sm"
+                >
+                    <Upload className="w-4 h-4 mr-2" /> Importa JSON
+                </button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                />
             </div>
+
+            {/* Modale Avviso Importazione */}
+            {showImportWarning && (
+                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border-2 border-orange-500/50">
+                        <div className="flex items-center mb-4 text-orange-400">
+                            <AlertTriangle className="w-8 h-8 mr-3" />
+                            <h2 className="text-xl font-extrabold text-white">Attenzione!</h2>
+                        </div>
+                        
+                        <div className="mb-6 text-slate-300">
+                            <p className="mb-3">
+                                Stai per <strong className="text-orange-400">sovrascrivere completamente</strong> tutti i dati esistenti con il file JSON importato.
+                            </p>
+                            <p className="text-sm text-slate-400">
+                                Questa azione è <strong>irreversibile</strong>. Tutte le carte, classi, keyword e impostazioni attuali verranno eliminate e sostituite con i dati del file importato.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCancelImport}
+                                className="flex-1 p-3 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-xl shadow-md transition duration-150"
+                            >
+                                Annulla
+                            </button>
+                            <button
+                                onClick={handleConfirmImport}
+                                disabled={isSaving}
+                                className="flex-1 p-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-bold rounded-xl shadow-md transition duration-150"
+                            >
+                                {isSaving ? 'Importazione...' : 'Conferma Importazione'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* NUOVO: Filtri */}
             <CardFilter 
